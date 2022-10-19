@@ -1,15 +1,58 @@
+import 'dart:html';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart';
+import 'package:voting_dapp/blockchainVars.dart';
+import 'package:web3dart/web3dart.dart';
 
-class mainPage extends StatelessWidget {
+late Client httpClient;
+late Web3Client ethClient;
+final myAddress = address;
+var myData;
+
+class mainPage extends StatefulWidget {
   @override
+  State<mainPage> createState() => _mainPageState();
+}
+
+class _mainPageState extends State<mainPage> {
+  @override
+  void initState() {
+    super.initState();
+    httpClient = Client();
+    ethClient = Web3Client(blockChainUrl, httpClient);
+    getVotes(myAddress);
+  }
+
+  Future<DeployedContract> loadContract() async {
+    String abi = await rootBundle.loadString("assets/abi.json");
+    String contractAddress = "0xa9cC52AD19a1535F43f768980d9A7f3DE146467D";
+    final contract = DeployedContract(ContractAbi.fromJson(abi, "Vote"),
+        EthereumAddress.fromHex(contractAddress));
+    return contract;
+  }
+
+  Future<List<dynamic>> query(String functionName, List<dynamic> args) async {
+    final contract = await loadContract();
+    final ethFunction = contract.function(functionName);
+    final result = await ethClient.call(
+        contract: contract, function: ethFunction, params: args);
+    return result;
+  }
+
+  Future<void> getVotes(String targetAddress) async {
+    List<dynamic> result = await query("getVotes", []);
+    myData = [int.parse(result[0].toString()), int.parse(result[1].toString())];
+  }
+
   Widget build(BuildContext context) {
     return Container(
       color: Colors.grey[300],
-      padding: EdgeInsets.all(10),
+      padding: const EdgeInsets.all(10),
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.only(bottom: 10),
             child: Container(
               child: Text("Pick your side",
                   style: TextStyle(fontSize: 33, color: Colors.grey[800])),
@@ -17,7 +60,7 @@ class mainPage extends StatelessWidget {
           ),
           Expanded(
             child: Row(
-              children: [
+              children: const [
                 Expanded(
                   flex: 1,
                   child: leftSide(),
@@ -38,7 +81,6 @@ class mainPage extends StatelessWidget {
 
 class leftSide extends StatefulWidget {
   const leftSide({super.key});
-
   @override
   State<leftSide> createState() => _leftSideState();
 }
@@ -46,7 +88,8 @@ class leftSide extends StatefulWidget {
 class _leftSideState extends State<leftSide> {
   int votes = 0;
   void voteA() {
-    votes += 1;
+    myData[0] += 1;
+    votes = myData[0];
   }
 
   @override
@@ -57,7 +100,7 @@ class _leftSideState extends State<leftSide> {
         color: Colors.green[400],
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 30),
+        padding: const EdgeInsets.symmetric(vertical: 30),
         child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
@@ -75,7 +118,7 @@ class _leftSideState extends State<leftSide> {
                       voteA();
                     });
                   },
-                  child: Text("Vote")),
+                  child: const Text("Vote")),
             ]),
       ),
     );
@@ -92,7 +135,8 @@ class rightSide extends StatefulWidget {
 class _rightSideState extends State<rightSide> {
   int votes = 0;
   void voteB() {
-    votes += 1;
+    myData[1] += 1;
+    votes = myData[1];
   }
 
   @override
@@ -103,7 +147,7 @@ class _rightSideState extends State<rightSide> {
         color: Colors.blue[400],
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 30),
+        padding: const EdgeInsets.symmetric(vertical: 30),
         child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
@@ -121,7 +165,7 @@ class _rightSideState extends State<rightSide> {
                           voteB();
                         })
                       },
-                  child: Text("vote"))
+                  child: const Text("vote"))
             ]),
       ),
     );
