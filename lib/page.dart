@@ -8,7 +8,8 @@ import 'package:web3dart/web3dart.dart';
 late Client httpClient;
 late Web3Client ethClient;
 final myAddress = address;
-var myData;
+var myData = [0, 0];
+bool canVote = true;
 
 Future<DeployedContract> loadContract() async {
   String abi = await rootBundle.loadString("assets/abi.json");
@@ -26,32 +27,41 @@ Future<List<dynamic>> query(String functionName, List<dynamic> args) async {
   return result;
 }
 
-Future<void> getVotes(String targetAddress) async {
+Future<List<int>> getVotes(String targetAddress) async {
   List<dynamic> result = await query("getVotes", []);
   myData = [int.parse(result[0].toString()), int.parse(result[1].toString())];
-  print(myData);
+  return myData;
 }
 
-Future<String> submit(String functionName, List<dynamic> args) async {
-  EthPrivateKey credential = EthPrivateKey.fromHex(
+Future<void> vote(bool team) async {
+  canVote = false;
+  Credentials key = EthPrivateKey.fromHex(
       "c24b664cd22ab4a6fd8f5b772e7a24404a5236cd169d69063c1a5baea051f284");
-  DeployedContract contract = await loadContract();
-  final ethFunction = contract.function(functionName);
-  final result = await ethClient.sendTransaction(
-      credential,
-      Transaction.callContract(
-          contract: contract,
-          function: ethFunction,
-          parameters: args,
-          maxGas: 100000),
-      chainId: 11155111);
-  return result;
-}
 
-Future<String> vote(bool team) async {
-  String func = team ? "VoteA" : "VoteB";
-  var response = await submit(func, []);
-  return response;
+  //obtain our contract from abi in json file
+  final contract = await loadContract();
+
+  // extract function from json file
+  final function = contract.function(
+    team ? "voteA" : "voteB",
+  );
+
+  //send transaction using the our private key, function and contract
+  await ethClient.sendTransaction(
+      key,
+      Transaction.callContract(
+          contract: contract, function: function, parameters: []),
+      chainId: 11155111);
+  // ScaffoldMessenger.of(context).removeCurrentSnackBar();
+  // snackBar(label: "verifying vote");
+  //set a 20 seconds delay to allow the transaction to be verified before trying to retrieve the balance
+  // Future.delayed(const Duration(seconds: 20), () {
+  //   ScaffoldMessenger.of(context).removeCurrentSnackBar();
+  //   snackBar(label: "retrieving votes");
+  //   getTotalVotes();
+
+  //   ScaffoldMessenger.of(context).clearSnackBars();
+  // });
 }
 
 class mainPage extends StatefulWidget {
@@ -109,13 +119,24 @@ class leftSide extends StatefulWidget {
 }
 
 class _leftSideState extends State<leftSide> {
-  int votes = 0;
+  int votes = myData[0];
 
-  voteA() async {
-    // await vote(true);
-    getVotes(myAddress);
-    votes = myData[0];
-    // return votes.toString();
+  Future VoteA() async {
+    if (!canVote) return;
+    setState(() {
+      canVote = false;
+    });
+
+    await vote(true);
+    Future.delayed(Duration(seconds: 20), () async {
+      var data = await getVotes(myAddress);
+      votes = data[0];
+      print(data);
+
+      setState(() {
+        canVote = true;
+      });
+    });
   }
 
   @override
@@ -139,11 +160,11 @@ class _leftSideState extends State<leftSide> {
                   style: ButtonStyle(
                       backgroundColor:
                           MaterialStateProperty.all<Color>(Colors.green)),
-                  onPressed: () {
-                    setState(() {
-                      vote(true);
-                    });
-                  },
+                  onPressed: canVote
+                      ? () async {
+                          await VoteA();
+                        }
+                      : null,
                   child: const Text("Vote")),
             ]),
       ),
@@ -160,9 +181,22 @@ class rightSide extends StatefulWidget {
 
 class _rightSideState extends State<rightSide> {
   int votes = 0;
-  void voteB() {
-    myData[1] += 1;
-    votes = myData[1];
+  Future VoteB() async {
+    if (!canVote) return;
+    setState(() {
+      canVote = false;
+    });
+
+    await vote(false);
+    Future.delayed(Duration(seconds: 20), () async {
+      var data = await getVotes(myAddress);
+      votes = data[1];
+      print(data);
+
+      setState(() {
+        canVote = true;
+      });
+    });
   }
 
   @override
@@ -186,11 +220,11 @@ class _rightSideState extends State<rightSide> {
                   style: ButtonStyle(
                       backgroundColor:
                           MaterialStateProperty.all<Color>(Colors.blue)),
-                  onPressed: () => {
-                        setState(() {
-                          voteB();
-                        })
-                      },
+                  onPressed: canVote
+                      ? () async {
+                          await VoteB();
+                        }
+                      : null,
                   child: const Text("vote"))
             ]),
       ),
