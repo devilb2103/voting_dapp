@@ -10,6 +10,50 @@ late Web3Client ethClient;
 final myAddress = address;
 var myData;
 
+Future<DeployedContract> loadContract() async {
+  String abi = await rootBundle.loadString("assets/abi.json");
+  String contractAddress = "0xfE0a2Ad86B09eC0b246Ec355c6A99A16e0D105F9";
+  final contract = DeployedContract(ContractAbi.fromJson(abi, "Vote"),
+      EthereumAddress.fromHex(contractAddress));
+  return contract;
+}
+
+Future<List<dynamic>> query(String functionName, List<dynamic> args) async {
+  final contract = await loadContract();
+  final ethFunction = contract.function(functionName);
+  final result = await ethClient.call(
+      contract: contract, function: ethFunction, params: args);
+  return result;
+}
+
+Future<void> getVotes(String targetAddress) async {
+  List<dynamic> result = await query("getVotes", []);
+  myData = [int.parse(result[0].toString()), int.parse(result[1].toString())];
+  print(myData);
+}
+
+Future<String> submit(String functionName, List<dynamic> args) async {
+  EthPrivateKey credential = EthPrivateKey.fromHex(
+      "c24b664cd22ab4a6fd8f5b772e7a24404a5236cd169d69063c1a5baea051f284");
+  DeployedContract contract = await loadContract();
+  final ethFunction = contract.function(functionName);
+  final result = await ethClient.sendTransaction(
+      credential,
+      Transaction.callContract(
+          contract: contract,
+          function: ethFunction,
+          parameters: args,
+          maxGas: 100000),
+      chainId: 11155111);
+  return result;
+}
+
+Future<String> vote(bool team) async {
+  String func = team ? "VoteA" : "VoteB";
+  var response = await submit(func, []);
+  return response;
+}
+
 class mainPage extends StatefulWidget {
   @override
   State<mainPage> createState() => _mainPageState();
@@ -22,27 +66,6 @@ class _mainPageState extends State<mainPage> {
     httpClient = Client();
     ethClient = Web3Client(blockChainUrl, httpClient);
     getVotes(myAddress);
-  }
-
-  Future<DeployedContract> loadContract() async {
-    String abi = await rootBundle.loadString("assets/abi.json");
-    String contractAddress = "0xa9cC52AD19a1535F43f768980d9A7f3DE146467D";
-    final contract = DeployedContract(ContractAbi.fromJson(abi, "Vote"),
-        EthereumAddress.fromHex(contractAddress));
-    return contract;
-  }
-
-  Future<List<dynamic>> query(String functionName, List<dynamic> args) async {
-    final contract = await loadContract();
-    final ethFunction = contract.function(functionName);
-    final result = await ethClient.call(
-        contract: contract, function: ethFunction, params: args);
-    return result;
-  }
-
-  Future<void> getVotes(String targetAddress) async {
-    List<dynamic> result = await query("getVotes", []);
-    myData = [int.parse(result[0].toString()), int.parse(result[1].toString())];
   }
 
   Widget build(BuildContext context) {
@@ -87,9 +110,12 @@ class leftSide extends StatefulWidget {
 
 class _leftSideState extends State<leftSide> {
   int votes = 0;
-  void voteA() {
-    myData[0] += 1;
+
+  voteA() async {
+    // await vote(true);
+    getVotes(myAddress);
     votes = myData[0];
+    // return votes.toString();
   }
 
   @override
@@ -115,7 +141,7 @@ class _leftSideState extends State<leftSide> {
                           MaterialStateProperty.all<Color>(Colors.green)),
                   onPressed: () {
                     setState(() {
-                      voteA();
+                      vote(true);
                     });
                   },
                   child: const Text("Vote")),
