@@ -99,11 +99,17 @@ class _leftSideState extends State<leftSide> {
                       backgroundColor:
                           MaterialStateProperty.all<Color>(Colors.green)),
                   onPressed: () async {
+                    setState(() {});
                     await con.voteA().then((value) {
                       setState(() {});
                     });
                   },
                   child: const Text("Vote")),
+              !con.canVote
+                  ? const Padding(
+                      padding: EdgeInsets.all(10),
+                      child: CircularProgressIndicator())
+                  : Container(),
             ]),
       ),
     );
@@ -140,11 +146,17 @@ class _rightSideState extends State<rightSide> {
                       backgroundColor:
                           MaterialStateProperty.all<Color>(Colors.blue)),
                   onPressed: () async {
+                    setState(() {});
                     await con.voteB().then((value) {
                       setState(() {});
                     });
                   },
-                  child: const Text("vote"))
+                  child: const Text("vote")),
+              !con.canVote
+                  ? const Padding(
+                      padding: EdgeInsets.all(10),
+                      child: CircularProgressIndicator())
+                  : Container(),
             ]),
       ),
     );
