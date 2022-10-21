@@ -1,14 +1,13 @@
-import 'dart:async';
 import 'dart:core';
 import 'package:http/http.dart';
 import 'package:flutter/services.dart';
-import 'package:voting_dapp/blockchainVars.dart';
+import 'package:voting_dapp/blockchain_vars.dart';
 import 'package:web3dart/web3dart.dart';
 
 class Votes {
   static Client httpClient = Client();
   static Web3Client ethClient = Web3Client(blockChainUrl, httpClient);
-  static final myAddress = address;
+  static const myAddress = address;
   static List<int> myData = [0, 0];
   static bool canVote = true;
 

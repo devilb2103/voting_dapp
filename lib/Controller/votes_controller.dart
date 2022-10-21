@@ -1,10 +1,6 @@
 import 'package:mvc_pattern/mvc_pattern.dart';
 import 'package:voting_dapp/Model/votes_model.dart';
-import 'dart:html';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart';
-import 'package:voting_dapp/blockchainVars.dart';
 import 'package:web3dart/web3dart.dart';
 
 class VotesController extends ControllerMVC {

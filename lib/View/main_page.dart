@@ -1,10 +1,5 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
 import 'package:voting_dapp/Controller/votes_controller.dart';
-import 'package:voting_dapp/blockchainVars.dart';
-import 'package:web3dart/web3dart.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
