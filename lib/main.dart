@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'page.dart';
+import 'package:voting_dapp/View/main_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -30,7 +30,7 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
         body: Container(
-      child: mainPage(),
+      child: MainPage(),
     ));
   }
 }
